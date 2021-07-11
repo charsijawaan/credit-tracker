@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "credit-tracker",
+    "slug": "credit-tracker",
+    "version": "1.0.0",
+    "icon": "./credit-tracker-icon.png",
+    "android": {
+      "package": "com.credittrackercompany.credittracker",
+      "versionCode": 1
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  },
+  "name": "credit-tracker"
+}
