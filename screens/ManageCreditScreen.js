@@ -6,6 +6,7 @@ import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import * as SecureStore from 'expo-secure-store';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import mime from "mime";
 import axios from 'axios';
 import config from '../config';
@@ -31,6 +32,13 @@ export default function ManageCreditScreen({ navigation }) {
     const [showMailMenu, setShowMailMenu] = useState(false);
     const [email, setEmail] = useState("");
     const [showArchived, setShowArchived] = useState(false);
+
+    const [startDate, setStartDate] = useState(new Date(new Date().getTime()));
+    const [endDate, setEndDate] = useState(new Date(new Date().getTime()));
+    const [showStartDate, setShowStartDate] = useState(false);
+    const [showEndDate, setShowEndDate] = useState(false);
+
+    const [showDownloadMenu, setShowDownloadMenu] = useState(false);
 
 
     // Get Customers When First Time this component is created
@@ -71,6 +79,10 @@ export default function ManageCreditScreen({ navigation }) {
         })
     }
 
+    const resetDateTimeStates = () => {
+        setStartDate(new Date(new Date().getTime()));setEndDate(new Date(new Date().getTime()));
+    }
+
 
     // Update Credit Handler
     const updateCustomerCredit = async () => {
@@ -102,11 +114,13 @@ export default function ManageCreditScreen({ navigation }) {
             // Create Form and append data        
             const formdata = new FormData();
 
+            var date = new Date();
+
             formdata.append("customer_id", selectedCustomer.customer_id);
             formdata.append("increase_amount", increaseCreditAmount);
             formdata.append("decrease_amount", null);
             formdata.append("changed_by_id", await getCurrentUserID());
-            formdata.append("date", new Date().toISOString().slice(0, 19).replace('T', ' '));
+            formdata.append("date", date.toISOString().split('T')[0] + ' ' + date.toTimeString().split(' ')[0]);
             formdata.append("auth_name", authName);
             formdata.append("image", {uri: imageURI, name: imageURI.split('/').pop(), type: mime.getType(imageURI)});
             
@@ -135,11 +149,13 @@ export default function ManageCreditScreen({ navigation }) {
             // Create Form and append data
             const formdata = new FormData();
 
+            var date = new Date();            
+
             formdata.append("customer_id", selectedCustomer.customer_id);
             formdata.append("increase_amount", null);
             formdata.append("decrease_amount", decreaseCreditAmount);
             formdata.append("changed_by_id", await getCurrentUserID());
-            formdata.append("date", new Date().toISOString().slice(0, 19).replace('T', ' '));
+            formdata.append("date", date.toISOString().split('T')[0] + ' ' + date.toTimeString().split(' ')[0]);
             formdata.append("auth_name", authName);
             formdata.append("image", {uri: imageURI, name: imageURI.split('/').pop(), type: mime.getType(imageURI)});
 
@@ -249,20 +265,29 @@ export default function ManageCreditScreen({ navigation }) {
 
     // Download CSV File to Phone
     const downloadCSVFile = () => {
-        console.log("download csv file");
+
+        var sd = new Date(startDate.getTime());
+        var ed = new Date(endDate.getTime());
+        
         axios.post(config.API_URL + "generate_csv_file", {
-            customer_id: selectedCustomer.customer_id
+            customer_id: selectedCustomer.customer_id,
+            startDate: sd.toISOString().split('T')[0],
+            endDate: ed.toISOString().split('T')[0]
         })
         .then((response) => {
             if(response.data.status === 100) {
+                resetDateTimeStates();
                 WebBrowser.openBrowserAsync(config.API_URL + response.data.fileName);
+                setShowDownloadMenu(!showDownloadMenu);
             }
             else if(response.data.status === 400) {
+                resetDateTimeStates();
                 alert("Some Error Occured Please Try Again.");
                 return;
             }
         })
         .catch((error) => {
+            resetDateTimeStates();
             console.log(error);
         });
     }
@@ -270,20 +295,29 @@ export default function ManageCreditScreen({ navigation }) {
     // Mail CSV File to an Email
     const sendEmail = () => {
         if(email !== "") {
+
+            var sd = new Date(startDate.getTime());
+            var ed = new Date(endDate.getTime());
+
             axios.post(config.API_URL + "send_csv_file", {
                 customer_id: selectedCustomer.customer_id,
-                email: email
+                email: email,
+                startDate: sd.toISOString().split('T')[0],
+                endDate: ed.toISOString().split('T')[0] 
             })
             .then((response) => {
                 if(response.data.status === 100) {
+                    resetDateTimeStates();
                     alert("Email Sent");
                     setShowMailMenu(!showMailMenu);
                 }
                 else if(response.data.status === 400) {
+                    resetDateTimeStates();
                     alert(config.INTERNET_ISSUE_MSG);
                 }
             })
             .catch((error) => {
+                resetDateTimeStates();
                 console.log(errpr);
             });
         }
@@ -362,7 +396,10 @@ export default function ManageCreditScreen({ navigation }) {
                         </View>
 
                         <View style={{marginTop: 8}}>
-                            <TouchableOpacity style={styles.closeModalBtn} onPress={downloadCSVFile}>
+                            <TouchableOpacity style={styles.closeModalBtn} onPress={() => {
+                                setModalVisible(!modalVisible);
+                                setShowDownloadMenu(true);
+                            }}>
                                 <Text style={{color: "#ffffff"}}>Download CSV File</Text>
                             </TouchableOpacity>
                         </View>
@@ -474,6 +511,7 @@ export default function ManageCreditScreen({ navigation }) {
                         </Picker>
                     </View>
 
+                    {/* Show Archived Toggle */}
                     <View style={[styles.checkboxWrapper, {width: "20%"}]}>
                         <Text>Show Archived</Text>
                         <CheckBox
@@ -528,6 +566,67 @@ export default function ManageCreditScreen({ navigation }) {
             }
 
 
+            {/* Download Menu */}
+            {showDownloadMenu &&
+                <View style={styles.downloadMenuWrapper}>
+
+                    <View>
+
+                        <View style={{marginTop: 8}}>
+                            <TouchableOpacity style={styles.closeModalBtn} onPress={() => {setShowStartDate(true)}}>
+                                <Text style={{color: "#ffffff"}}>Select Start Date</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{marginTop: 8}}>
+                            <TouchableOpacity style={styles.closeModalBtn} onPress={() => {setShowEndDate(true)}}>
+                                <Text style={{color: "#ffffff"}}>Select End Date</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{marginTop: 8}}>
+                            <TouchableOpacity style={styles.closeModalBtn} onPress={() => {downloadCSVFile()}}>
+                                <Text style={{color: "#ffffff"}}>Download</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{marginTop: 8}}>
+                            <TouchableOpacity style={styles.closeModalBtn} onPress={() => {setShowDownloadMenu(!showDownloadMenu)}}>
+                                <Text style={{color: "#ffffff"}}>Close</Text>
+                            </TouchableOpacity>
+                        </View>
+                                                    
+                        {showStartDate && (
+                            <DateTimePicker
+                                display="default"
+                                value={startDate}
+                                mode="date"
+                                onChange={(event, selectedDate) => {
+                                    var currentDate = selectedDate || startDate
+                                    setShowStartDate(Platform.OS === 'ios');
+                                    setStartDate(currentDate);
+                                }}
+                            />)
+                        }
+
+                        {showEndDate &&
+                            <DateTimePicker
+                                display="default"
+                                value={endDate}
+                                mode="date"
+                                onChange={(event, selectedDate) => {
+                                    var currentDate = selectedDate || endDate;
+                                    setShowEndDate(Platform.OS === 'ios');
+                                    setEndDate(currentDate);
+                                }}
+                            />
+                        }
+
+                    </View>                    
+
+                </View>
+            }
+
             {/* Menu Shen Main CSV is Clicked */}
             {showMailMenu &&
                 <View style={styles.mailMenuWrapper}>
@@ -540,6 +639,48 @@ export default function ManageCreditScreen({ navigation }) {
                                 placeholder="Enter Email"
                                 onChangeText={(email) => {setEmail(email)}}
                             />
+                        </View>
+
+                        <View>
+
+                            <View style={{marginTop: 8}}>
+                                <TouchableOpacity style={styles.closeModalBtn} onPress={() => {setShowStartDate(true)}}>
+                                    <Text style={{color: "#ffffff"}}>Select Start Date</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={{marginTop: 8}}>
+                                <TouchableOpacity style={styles.closeModalBtn} onPress={() => {setShowEndDate(true)}}>
+                                    <Text style={{color: "#ffffff"}}>Select End Date</Text>
+                                </TouchableOpacity>
+                            </View>
+                                                        
+                            {showStartDate && (
+                                <DateTimePicker
+                                    display="default"
+                                    value={startDate}
+                                    mode="date"
+                                    onChange={(event, selectedDate) => {
+                                        var currentDate = selectedDate || startDate
+                                        setShowStartDate(Platform.OS === 'ios');
+                                        setStartDate(currentDate);
+                                    }}
+                                />)
+                            }
+
+                            {showEndDate &&
+                                <DateTimePicker
+                                    display="default"
+                                    value={endDate}
+                                    mode="date"
+                                    onChange={(event, selectedDate) => {
+                                        var currentDate = selectedDate || endDate;
+                                        setShowEndDate(Platform.OS === 'ios');
+                                        setEndDate(currentDate);
+                                    }}
+                                />
+                            }
+
                         </View>
 
                         <View style={{marginTop: 8}}>
@@ -640,5 +781,15 @@ const styles = StyleSheet.create({
         backgroundColor: "#fff",
         borderRadius: 10,
         padding: 20
-    }
+    },
+    downloadMenuWrapper: {
+        width: "50%",
+        position: "absolute",
+        transform: [
+            {translateX: windowWidth / 2 - 100}
+        ],
+        backgroundColor: "#fff",
+        borderRadius: 10,
+        padding: 20
+    },
 });

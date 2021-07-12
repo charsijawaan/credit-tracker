@@ -51,7 +51,7 @@ export default function CreateCustomerScreen() {
     // Add Customer Handler
     addCustomerHandler = () => {
         // Perform Validations
-        if(firstName !== "" && lastName !== "" && contactNumber !== "" && addressOne !== "" && addressTwo !== "" && townCity !== "" && credit !== "" && customerDetails !== "") {
+        if(firstName !== "" && lastName !== "" && contactNumber !== "" && addressOne !== "" && addressTwo !== "" && townCity !== "" && customerDetails !== "") {
             // Send Request to API
             axios.post(config.API_URL + "add_customer", {
                 firstName: firstName,
@@ -60,7 +60,7 @@ export default function CreateCustomerScreen() {
                 addressOne: addressOne,
                 addressTwo: addressTwo,
                 townCity: townCity,
-                credit: credit,
+                // credit: credit,
                 customerDetails: customerDetails,
                 isBlocked: isBlocked
             })
@@ -154,7 +154,7 @@ export default function CreateCustomerScreen() {
                     />
                 </View>
 
-                <View style={{marginTop: 10}}>
+                {/* <View style={{marginTop: 10}}>
                     <Text style={creditIsFocused ? styles.fieldNameSelected : styles.fieldName}>Customer Credit</Text>
                     <TextInput                        
                         style={styles.input}
@@ -164,7 +164,7 @@ export default function CreateCustomerScreen() {
                         onChangeText={(credit) => {setCredit(credit)}}
                         keyboardType="numeric"
                     />
-                </View>
+                </View> */}
 
                 <View style={{marginTop: 10}}>
                     <Text style={customerDetailsIsFocused ? styles.fieldNameSelected : styles.fieldName}>Customer Details</Text>
