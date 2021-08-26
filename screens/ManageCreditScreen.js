@@ -49,7 +49,9 @@ export default function ManageCreditScreen({ navigation }) {
     // Get Customers When this Tab is pressed after first time creation
     useEffect(() => {
         // Adding Listener to Tab Press
-        const unsubscribe = navigation.addListener('tabPress', (e) => {
+        const unsubscribe = navigation.addListener('tabPress', async (e) => {
+            let jsonValue = await SecureStore.getItemAsync("user");
+            console.log(jsonValue);
             getAllCustomers();  
         });
         return unsubscribe;
